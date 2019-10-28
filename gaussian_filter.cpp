@@ -194,10 +194,10 @@ int main(int argc, char ** argv)
 
   Cube data(50);
   data.set(10, 20, 30, 5.3);
-  data.print_nonzeros();
-  cout << "==============" << endl;
+  //data.print_nonzeros();
+  //cout << "==============" << endl;
   apply_kernel(data, kernel);
-  data.print_nonzeros();
+  //data.print_nonzeros();
 
   size_t L = data.get_size();
 
