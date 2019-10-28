@@ -1,1 +1,1 @@
-CMakeLists_orig.txt
+CMakeLists_kokkos.txt

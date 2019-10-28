@@ -29,7 +29,6 @@ void generate_gaussian(int l, double sigma, ViewMatrixType g)
 			   },
 			   sum
 			   );      
-      std::cout<<sum<<std::endl;
             Kokkos::parallel_for(
 			   Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {l,l,l}), 
 			   KOKKOS_LAMBDA (int i, int j, int k)
@@ -44,8 +43,6 @@ void init_data(ViewMatrixType::HostMirror d, int d_size)
      d(10, 20, 30) = 5.3;
      d(0,0,0) = 10.5;
      d(0,40,40) = - 11.3;
-     std::cout << d(13,32,1) << std::endl;
-     std::cout << d(10,20,30) << " is " << 5.3 << " in init ?" << std::endl;
 }
 
 
@@ -135,19 +132,48 @@ int main(int argc, char ** argv)
     ViewMatrixType data("data", L, L, L);
     ViewMatrixType result("result", L, L, L);
     ViewMatrixType::HostMirror h_data = Kokkos::create_mirror_view( data );
-    ViewMatrixType::HostMirror h_g = Kokkos::create_mirror_view( g );    
+
+    Kokkos::Timer timer;
+    double time;
+    
     init_data(h_data, L);
+
+    time = timer.seconds();
+    std::cout<<"init_data " << time << std::endl;
+
+    timer.reset();
     Kokkos::deep_copy(data, h_data);
+    time = timer.seconds();
+    std::cout<<"h_data -> data " << time << std::endl;
+    
+    timer.reset();
     generate_gaussian(l, sigma,  g);
-    //Kokkos::deep_copy(h_g, g);
-    //Kokkos::deep_copy(result, data);
+    time = timer.seconds();
+    std::cout<<"generate_gaussian  " << time << std::endl;
+
+    timer.reset();
     apply_kernel(data, result, L, g, l);
+    time = timer.seconds();
+    std::cout<<"apply_kernel  " << time << std::endl;
+
+    timer.reset();
     Kokkos::deep_copy(h_data, result);
+    time = timer.seconds();
+    std::cout<<"result -> h_data  " << time << std::endl;
+
+    timer.reset();    
     to_adios2(h_data, &comm, "data");
-    //to_adios2(h_g, &comm, "g");
+    time = timer.seconds();
+    std::cout<<"adios2  " << time << std::endl;    
   }
   Kokkos::finalize();
   MPI_Finalize();
   return 0;
 }
 
+/*
+Kokkos::View<const double*> a_const = a_nonconst;
+
+Kokkos::View<const int*, Kokkos::RandomAccess> a_ra = a_nonconst;
+
+ */
