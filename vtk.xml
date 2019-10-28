@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<VTKFile type="ImageData" version="0.1" byte_order="LittleEndian">
+ <ImageData WholeExtent="0 49 0 49 0 49" Origin="0 0 0" Spacing="1 1 1">
+   <Piece Extent="0 49 0 49 0 49">
+     <CellData>
+       <DataArray Name="data"/>
+     </CellData>
+   </Piece>
+ </ImageData>
+</VTKFile>

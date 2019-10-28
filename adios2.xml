@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<adios-config>
+    <io name="data">
+      <engine type="BP3">
+	<parameter key="OpenTimeoutSecs" value="1000.0"/>
+      </engine>
+    </io>
+    <io name="g">
+      <engine type="BP3">
+	<parameter key="OpenTimeoutSecs" value="1000.0"/>
+      </engine>
+    </io>    
+</adios-config>
+
