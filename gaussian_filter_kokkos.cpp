@@ -156,9 +156,10 @@ int main(int argc, char ** argv)
     
     timer.reset();
     apply_kernel(data, result, L, gg, l);
+    Kokkos::fence();
     time = timer.seconds();
     std::cout<<"apply_kernel  " << time << std::endl;
-
+     
     timer.reset();
     Kokkos::deep_copy(h_data, result);
     time = timer.seconds();
