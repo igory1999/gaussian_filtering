@@ -8,6 +8,7 @@
 #include <Kokkos_Core.hpp>
 
 typedef Kokkos::View<double***>  ViewMatrixType;
+typedef Kokkos::View<const double***, Kokkos::MemoryTraits<Kokkos::RandomAccess>> ViewMatrixConstType;
 
 void generate_gaussian(int l, double sigma, ViewMatrixType g)
 {
@@ -47,7 +48,7 @@ void init_data(ViewMatrixType::HostMirror d, int d_size)
 
 
 void apply_kernel(ViewMatrixType data, ViewMatrixType result, int d_size,
-		  ViewMatrixType kernel, int k_size)
+		  ViewMatrixConstType kernel, int k_size)
 {
   int w = (k_size - 1)/2;
   Kokkos::parallel_for(
@@ -121,7 +122,7 @@ int main(int argc, char ** argv)
   MPI_Comm_rank(comm, &rank);
   MPI_Comm_size(comm, &comm_size);
   
-  int L = 50;
+  int L = 256;
   int gw = 5;
   int l = 2*gw + 1;
   double sigma = 0.1;
@@ -151,8 +152,10 @@ int main(int argc, char ** argv)
     time = timer.seconds();
     std::cout<<"generate_gaussian  " << time << std::endl;
 
+    ViewMatrixConstType gg = g;
+    
     timer.reset();
-    apply_kernel(data, result, L, g, l);
+    apply_kernel(data, result, L, gg, l);
     time = timer.seconds();
     std::cout<<"apply_kernel  " << time << std::endl;
 
