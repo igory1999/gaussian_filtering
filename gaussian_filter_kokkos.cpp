@@ -12,38 +12,38 @@ typedef Kokkos::View<const double***, Kokkos::MemoryTraits<Kokkos::RandomAccess>
 
 void generate_gaussian(int l, double sigma, ViewMatrixType g)
 {
-     Kokkos::parallel_for(
-			   Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {l,l,l}), 
-			   KOKKOS_LAMBDA (int i, int j, int k)
-			   {
-			     double r2 = ((l - 1)/2 - i)*((l - 1)/2 - i) +
-			       ((l - 1)/2 - j)*((l - 1)/2 - j) + ((l - 1)/2 - k)*((l -1)/2 - k);
-			     g(i, j, k) = exp( - r2/2/sigma/sigma)/2/sigma/sigma/M_PI;
-			   }
-			   );
-      double sum = 0;
-      Kokkos::parallel_reduce(
-			   Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {l,l,l}), 
-			   KOKKOS_LAMBDA (int i, int j, int k, double & local_sum)
-			   {
-			     local_sum += g(i, j, k);
-			   },
-			   sum
-			   );      
-            Kokkos::parallel_for(
-			   Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {l,l,l}), 
-			   KOKKOS_LAMBDA (int i, int j, int k)
-			   {
-			     g(i, j, k) /= sum;
-			   }
-			   );
+  Kokkos::parallel_for(
+		       Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {l,l,l}), 
+		       KOKKOS_LAMBDA (int i, int j, int k)
+		       {
+			 double r2 = ((l - 1)/2 - i)*((l - 1)/2 - i) +
+			   ((l - 1)/2 - j)*((l - 1)/2 - j) + ((l - 1)/2 - k)*((l -1)/2 - k);
+			 g(i, j, k) = exp( - r2/2/sigma/sigma)/2/sigma/sigma/M_PI;
+		       }
+		       );
+  double sum = 0;
+  Kokkos::parallel_reduce(
+			  Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {l,l,l}), 
+			  KOKKOS_LAMBDA (int i, int j, int k, double & local_sum)
+			  {
+			    local_sum += g(i, j, k);
+			  },
+			  sum
+			  );      
+  Kokkos::parallel_for(
+		       Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0}, {l,l,l}), 
+		       KOKKOS_LAMBDA (int i, int j, int k)
+		       {
+			 g(i, j, k) /= sum;
+		       }
+		       );
 }
 
 void init_data(ViewMatrixType::HostMirror d, int d_size)
 {
-     d(10, 20, 30) = 5.3;
-     d(0,0,0) = 10.5;
-     d(0,40,40) = - 11.3;
+  d(10, 20, 30) = 5.3;
+  d(0,0,0) = 10.5;
+  d(0,40,40) = - 11.3;
 }
 
 
@@ -53,7 +53,8 @@ void apply_kernel(ViewMatrixType data, ViewMatrixType result, int d_size,
   int w = (k_size - 1)/2;
   Kokkos::parallel_for(
 		       Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0,0,0},
-							      {d_size, d_size, d_size}), 
+							      {d_size, d_size, d_size},
+							      {8, 8, 8}),
 		       KOKKOS_LAMBDA (int i, int j, int k)
 		       {
 			 result(i, j, k) = 0.0;
@@ -123,7 +124,7 @@ int main(int argc, char ** argv)
   MPI_Comm_size(comm, &comm_size);
   
   int L = 256;
-  int gw = 5;
+  int gw = 3;
   int l = 2*gw + 1;
   double sigma = 0.1;
   
@@ -132,7 +133,9 @@ int main(int argc, char ** argv)
     ViewMatrixType g("gaussian", l, l, l);
     ViewMatrixType data("data", L, L, L);
     ViewMatrixType result("result", L, L, L);
+    ViewMatrixType::HostMirror h_result = Kokkos::create_mirror_view( result );
     ViewMatrixType::HostMirror h_data = Kokkos::create_mirror_view( data );
+    
 
     Kokkos::Timer timer;
     double time;
@@ -159,14 +162,15 @@ int main(int argc, char ** argv)
     Kokkos::fence();
     time = timer.seconds();
     std::cout<<"apply_kernel  " << time << std::endl;
-     
+    
+
     timer.reset();
-    Kokkos::deep_copy(h_data, result);
+    Kokkos::deep_copy(h_result, result);
     time = timer.seconds();
-    std::cout<<"result -> h_data  " << time << std::endl;
+    std::cout<<"result -> h_result  " << time << std::endl;
 
     timer.reset();    
-    to_adios2(h_data, &comm, "data");
+    to_adios2(h_result, &comm, "data");
     time = timer.seconds();
     std::cout<<"adios2  " << time << std::endl;    
   }
@@ -174,10 +178,3 @@ int main(int argc, char ** argv)
   MPI_Finalize();
   return 0;
 }
-
-/*
-Kokkos::View<const double*> a_const = a_nonconst;
-
-Kokkos::View<const int*, Kokkos::RandomAccess> a_ra = a_nonconst;
-
- */
